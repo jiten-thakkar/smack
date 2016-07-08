@@ -1,6 +1,8 @@
 //
 // This file is distributed under the MIT License. See LICENSE for details.
 //
+#include<stddef.h>
+
 #ifndef SMACK_H_
 #define SMACK_H_
 
@@ -13,11 +15,14 @@ extern "C" {
 #endif
 
 // Apprently needed by SVCOMP benchmarks
-#define __inline
-#define __builtin_expect __builtinx_expect
-#define __builtin_memcpy __builtinx_memcpy
+//#define __inline
+//#define __builtin_expect __builtinx_expect
+//#define __builtin_memcpy __builtinx_memcpy
 #define __builtin_va_start __builtinx_va_start
 #define __builtin_object_size __builtinx_object_size
+
+void *malloc(size_t size);
+void *memset(void *s, int c, size_t n);
 
 // For handling of va_start macro
 void __builtinx_va_start(char*,char*);

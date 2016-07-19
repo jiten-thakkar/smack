@@ -13,11 +13,13 @@ extern "C" {
 #endif
 
 // Apprently needed by SVCOMP benchmarks
-#define __inline
 #define __builtin_expect __builtinx_expect
 #define __builtin_memcpy __builtinx_memcpy
 #define __builtin_va_start __builtinx_va_start
 #define __builtin_object_size __builtinx_object_size
+
+//void* malloc(unsigned long);
+//void* memset(void *, int, unsigned long);
 
 // For handling of va_start macro
 void __builtinx_va_start(char*,char*);

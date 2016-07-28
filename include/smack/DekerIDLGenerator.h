@@ -16,6 +16,7 @@ using namespace llvm;
 class DekerIDLGenerator: public llvm::ModulePass {
 private:
 BUDataStructures* BU;
+TDDataStructures* TD;
 
 public:
   static char ID; // Pass identification, replacement for typeid

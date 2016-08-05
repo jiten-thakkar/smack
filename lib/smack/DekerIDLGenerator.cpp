@@ -14,8 +14,53 @@
 #include "llvm/IR/LLVMContext.h"
 
 #include <stack>
+#include <unordered_map>
+#include <tuple>
+#include <unordered_set>
+#include <vector>
 
-//using namespace std;
+struct Hash {
+  size_t operator() (const std::vector<int> &offsets) const {
+    size_t hash = 0;
+    for(auto it = offsets.begin(); it != offsets.end(); it++) {
+      hash = hash*10+*it;
+    }
+    return hash;
+  }
+};
+
+struct offSets {
+  std::unordered_set<std::vector<int>, Hash> read;
+  std::unordered_set<std::vector<int>, Hash> write;
+  offSets(std::vector<int> offsets, bool isRead) {
+    if(isRead)
+      read.insert(offsets);
+    else
+      write.insert(offsets);
+  }
+  offSets(){}
+  offSets(const offSets& object):read(object.read), write(object.write){}
+  void print(llvm::raw_ostream& ostream) {
+    if(!read.empty()) {
+    ostream << "Read\n";
+    for(auto it = read.begin(); it != read.end(); it++) {
+      for(auto vit = (*it).begin(); vit != (*it).end(); vit++) {
+        ostream << *vit << " ";
+      }
+      ostream << "\n";
+    }
+    }
+    if(!write.empty()) {
+    ostream << "Write\n";
+    for(auto it = write.begin(); it != write.end(); it++) {
+      for(auto vit = (*it).begin(); vit != (*it).end(); vit++) {
+        ostream << *vit << " ";
+      }
+      ostream << "\n";
+    }
+    } 
+  }
+};
 
 namespace smack {
 
@@ -24,13 +69,12 @@ using namespace llvm;
 bool DekerIDLGenerator::runOnModule(Module& m) {
   BU = &getAnalysis<BUDataStructures>();
   //TD = &getAnalysis<TDDataStructures>();
-  errs() << "here \n";
   for (auto& F : m) {
     if (!smack::Naming::isSmackName(F.getName())) {
-      errs() << "function " << F.getName() << "\n";
+      errs() << "Function " << F.getName() << "\n";
+      std::unordered_map<int, offSets> projections;
       DSGraph *graph = BU->getDSGraph(F);
       std::vector<DSNode*> argumentNodes;
-      //for(Function::arg_iterator I = Function::arg_begin(F), E = arg_end(F); I != E, ++I) {
       for(auto& A : F.getArgumentList()) {
 	Value* val = dyn_cast<Value>(&A);
         if(!val || !val->getType()->isPointerTy()) {/*errs() << "got null \n"; */
@@ -41,12 +85,12 @@ bool DekerIDLGenerator::runOnModule(Module& m) {
           argumentNodes.push_back(node);
 	}
       }
-      if(F.getName() == "e") {
+      /*if(F.getName() == "e") {
         for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
           (*I).print(errs());
           errs() << "\n";
         }
-      }
+      }*/
       errs() << "size of parameter values " << argumentNodes.size() << "\n";
       for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
         Value* pointer = NULL;
@@ -60,60 +104,49 @@ bool DekerIDLGenerator::runOnModule(Module& m) {
         }
 
         if (pointer) {
-          //inst->print(errs());
-          //errs() << "\n";
-          std::stack<int> offsets;
+          std::vector<int> offsets;
 	  if (isa<GetElementPtrInst>(pointer)) {
 	    while (GetElementPtrInst* elemPtr = dyn_cast<GetElementPtrInst>(pointer)) {
-	      //elemPtr->print(errs());
-              //errs() << "\n";
 	      if(elemPtr->getNumOperands() < 3) break;
 	      ConstantInt* CI = dyn_cast<ConstantInt>(elemPtr->getOperand(2));
-              //errs() << CI->getSExtValue() << " \n";
-              offsets.push(CI->getSExtValue());
+              offsets.push_back(CI->getSExtValue());
 	      pointer = elemPtr->getPointerOperand();
-              //pointer = operand->getPointerOperand();
               if(LoadInst* li = dyn_cast<LoadInst>(pointer)) {
                 pointer = li->getPointerOperand();
               }
 	    }
-            //errs() << "element ptr found \n";
-            //inst->print(errs());
 	  }
-          //Function *func = I->getParent()->getParent();
 
           DSNodeHandle &nodeHandle = graph->getNodeForValue(pointer);
           DSNode *targetNode = nodeHandle.getNode();
           for(std::vector<DSNode*>::iterator it=argumentNodes.begin(); it != argumentNodes.end(); it++) {
             if(*it == targetNode) {
-              errs() << "found one\n";
-              errs() << "parameter number: " << it - argumentNodes.begin() << "\n";
-              if(offsets.size() > 0) {
-	        errs() << "offsets: ";
-                while(!offsets.empty()) {
-                  errs() << offsets.top() << " ";
-                  offsets.pop();
-	        }
-	        errs() << "\n";
-	      }
-              //inst->print(errs());
-              //errs() << "\n";
-	      /*MDNode* meta = inst->getMetadata((unsigned)LLVMContext::MD_dbg);
-	      DIVariable div(meta);
-    DIType dit=div.getType(); 
-    DIDerivedType didt=static_cast<DIDerivedType>(dit);
-    DICompositeType dict=static_cast<DICompositeType>(didt.getTypeDerivedFrom());
-    DIArray dia=dict.getTypeArray(); 
-    assert(offset<dia.getNumElements());
-    DIType field=static_cast<DIType>(dia.getElement(offset));
-    errs()<<"Field'name is "<<field.getName()<<"\n";*/
+              int paramNumber = it - argumentNodes.begin();
+              std::reverse(offsets.begin(), offsets.end());
+              if(projections.find(paramNumber) == projections.end()) {
+                if(isa<LoadInst>(inst))
+                  projections[paramNumber] = offsets.empty() ? offSets() : offSets(offsets, true);
+                else
+                  projections[paramNumber] = offsets.empty() ? offSets() : offSets(offsets, false);
+              } else if(!offsets.empty()) {
+                if(isa<LoadInst>(inst))
+                  projections[paramNumber].read.insert(offsets);
+	        else
+                  projections[paramNumber].write.insert(offsets);
+              }
             }
 	  }
-        }
-        //return ""; 
       }   
+
     }	
+              for(auto it = projections.begin(); it != projections.end(); it++) {
+                errs() << "Parameter: " << (*it).first << "\n";
+                (*it).second.print(errs());
+                errs() << "\n";
+              }
   }
+}
+
   return false;
 }
 

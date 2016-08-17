@@ -401,6 +401,8 @@ void GraphBuilder::visitLoadInst(LoadInst &LI) {
 
   // Make that the node is read from...
   Ptr.getNode()->setReadMarker();
+  
+  Ptr.getNode()->setReadOffset(Ptr.getOffset());
 
   // Ensure a typerecord exists...
   Ptr.getNode()->growSizeForType(LI.getType(), Ptr.getOffset());
@@ -423,10 +425,13 @@ void GraphBuilder::visitStoreInst(StoreInst &SI) {
   DEBUG(errs() << "[local] visiting store: " << SI << "\n");
   Type *StoredTy = SI.getOperand(0)->getType();
   DSNodeHandle Dest = getValueDest(SI.getOperand(1));
+  //errs() << "node offset1: " << Dest.getOffset() << "\n";
+  //errs() << "instruction ";SI.print(errs());errs() << "\n";
   if (Dest.isNull()) return;
 
   // Mark that the node is written to...
   Dest.getNode()->setModifiedMarker();
+  Dest.getNode()->setWriteOffset(Dest.getOffset());
 
   // Ensure a type-record exists...
   Dest.getNode()->growSizeForType(StoredTy, Dest.getOffset());
@@ -458,13 +463,16 @@ void GraphBuilder::visitAtomicCmpXchgInst(AtomicCmpXchgInst &I) {
   //
   DSNodeHandle Ptr = getValueDest(I.getPointerOperand());
   if (Ptr.isNull()) return;
-
+  //errs() << "node offset2: " << Ptr.getOffset() << "\n";
+  
   //
   // Make that the memory object is read and written.
   //
   Ptr.getNode()->setReadMarker();
   Ptr.getNode()->setModifiedMarker();
-
+  
+  Ptr.getNode()->setReadOffset(Ptr.getOffset());
+  Ptr.getNode()->setWriteOffset(Ptr.getOffset());
   //
   // If the result of the compare-and-swap is a pointer, then we need to do
   // a few things:
@@ -505,12 +513,16 @@ void GraphBuilder::visitAtomicRMWInst(AtomicRMWInst &I) {
   //
   DSNodeHandle Ptr = getValueDest(I.getPointerOperand());
   if (Ptr.isNull()) return;
+  //errs() << "node offset3: " << Ptr.getOffset() << "\n";
 
   //
   // Make that the memory object is read and written.
   //
   Ptr.getNode()->setReadMarker();
   Ptr.getNode()->setModifiedMarker();
+  
+  Ptr.getNode()->setReadOffset(Ptr.getOffset());
+  Ptr.getNode()->setWriteOffset(Ptr.getOffset());
 
   //
   // Modify the DSNode so that it has the loaded/written type at the
@@ -542,9 +554,12 @@ void GraphBuilder::visitVAArgInst(VAArgInst &I) {
     DSNodeHandle Ptr = G.getVANodeFor(*FB);
     DSNodeHandle Dest = getValueDest(&I);
     if (Ptr.isNull()) return;
+  //errs() << "node offset4: " << Ptr.getOffset() << "\n";
 
     // Make that the node is read and written
     Ptr.getNode()->setReadMarker()->setModifiedMarker();
+  
+    Ptr.getNode()->setReadOffset(Ptr.getOffset())->setWriteOffset(Ptr.getOffset());
 
     // Not updating type info, as it is already a collapsed node
 
@@ -559,9 +574,12 @@ void GraphBuilder::visitVAArgInst(VAArgInst &I) {
 
     //FIXME: also updates the argument
     if (Ptr.isNull()) return;
+  //errs() << "node offset5: " << Ptr.getOffset() << "\n";
 
     // Make that the node is read and written
     Ptr.getNode()->setReadMarker()->setModifiedMarker();
+  
+    Ptr.getNode()->setReadOffset(Ptr.getOffset())->setWriteOffset(Ptr.getOffset());
 
     // Ensure a type record exists.
     DSNode *PtrN = Ptr.getNode();
@@ -669,9 +687,11 @@ void GraphBuilder::visitInsertValueInst(InsertValueInst& I) {
   Type *StoredTy = I.getInsertedValueOperand()->getType();
   DSNodeHandle Dest = getValueDest(&I);
   Dest.mergeWith(getValueDest(I.getAggregateOperand()));
+  //errs() << "node offset6: " << Dest.getOffset() << "\n";
 
   // Mark that the node is written to...
   Dest.getNode()->setModifiedMarker();
+  Dest.getNode()->setWriteOffset(Dest.getOffset());
   Type* STy = I.getAggregateOperand()->getType();
 
   unsigned Offset = getValueOffset(STy, I.getIndices(), TD);
@@ -690,6 +710,7 @@ void GraphBuilder::visitExtractValueInst(ExtractValueInst& I) {
 
   // Make that the node is read from...
   Ptr.getNode()->setReadMarker();
+  Ptr.getNode()->setReadOffset(Ptr.getOffset());
   Type* STy = I.getAggregateOperand()->getType();
 
   unsigned Offset = getValueOffset(STy, I.getIndices(), TD);
@@ -1139,6 +1160,7 @@ bool GraphBuilder::visitIntrinsic(CallSite CS, Function *F) {
   case Intrinsic::eh_typeid_for: {
     DSNodeHandle Ptr = getValueDest(CS.getArgument(0));
     Ptr.getNode()->setReadMarker();
+    Ptr.getNode()->setReadOffset(Ptr.getOffset());
     Ptr.getNode()->setIncompleteMarker();
     return true;
   }

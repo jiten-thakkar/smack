@@ -20,7 +20,7 @@
 #include <vector>
 
 struct Hash {
-  size_t operator() (const std::vector<int> &offsets) const {
+  size_t operator() (const std::vector<unsigned int> &offsets) const {
     size_t hash = 0;
     for(auto it = offsets.begin(); it != offsets.end(); it++) {
       hash = hash*10+*it;
@@ -30,9 +30,9 @@ struct Hash {
 };
 
 struct offSets {
-  std::unordered_set<std::vector<int>, Hash> read;
-  std::unordered_set<std::vector<int>, Hash> write;
-  offSets(std::vector<int> offsets, bool isRead) {
+  std::unordered_set<std::vector<unsigned int>, Hash> read;
+  std::unordered_set<std::vector<unsigned int>, Hash> write;
+  offSets(std::vector<unsigned int> offsets, bool isRead) {
     if(isRead)
       read.insert(offsets);
     else
@@ -70,86 +70,54 @@ bool DekerIDLGenerator::runOnModule(Module& m) {
   BU = &getAnalysis<BUDataStructures>();
   //TD = &getAnalysis<TDDataStructures>();
   for (auto& F : m) {
+  //errs() << "function name:" << F.getName() << "\n";
     if (!smack::Naming::isSmackName(F.getName())) {
       errs() << "Function " << F.getName() << "\n";
       std::unordered_map<int, offSets> projections;
       DSGraph *graph = BU->getDSGraph(F);
       std::vector<DSNode*> argumentNodes;
-      for(auto& A : F.getArgumentList()) {
-	Value* val = dyn_cast<Value>(&A);
+      int paramNumber=0;
+      for (Function::arg_iterator A=F.arg_begin(); A!=F.arg_end(); A++, paramNumber++) {
+	Value* val = dyn_cast<Value>(&*A);
         if(!val || !val->getType()->isPointerTy()) {/*errs() << "got null \n"; */
 	  argumentNodes.push_back(NULL);
 	} else {
           DSNodeHandle &nodeHandle = graph->getNodeForValue(val);
           DSNode *node = nodeHandle.getNode();
+          errs() << "write offset size: " << node->getWriteSize() << "\n";
+          errs() << "read offset size: " << node->getReadSize() << "\n";
           argumentNodes.push_back(node);
+          //int parameterNumber = A-F.arg_begin();
+          std::vector<unsigned int> writeOffsets;
+          for(DSNode::const_offset_iterator it=node->write_offset_begin(); it!=node->write_offset_end(); it++) {
+            if(projections.find(paramNumber) == projections.end()) {
+              projections[paramNumber] = offSets();
+            } 
+            errs() << "write offset: " << *it << "\n";
+            writeOffsets.push_back(*it);
+          }
+          projections[paramNumber].write.insert(writeOffsets);
+          
+          std::vector<unsigned int> readOffsets;
+          for(DSNode::const_offset_iterator it=node->read_offset_begin(); it!=node->read_offset_end(); it++) {
+            if(projections.find(paramNumber) == projections.end()) {
+              projections[paramNumber] = offSets();
+            }
+            readOffsets.push_back(*it);
+            //projections[paramNumber].read.insert(std::vector<unsigned int>(node->read_offset_begin(), node->read_offset_end()));
+          }
+          projections[paramNumber].read.insert(readOffsets);
 	}
       }
-      /*if(F.getName() == "e") {
-        for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
-          (*I).print(errs());
-          errs() << "\n";
-        }
-      }*/
-      errs() << "size of parameter values " << argumentNodes.size() << "\n";
-      for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
-        Value* pointer = NULL;
-	Instruction* inst = NULL;
-        if (LoadInst* li = dyn_cast<LoadInst>(&*I)) {
-          pointer = li->getPointerOperand();
-	  inst = &*I;
-        } else if (StoreInst* si = dyn_cast<StoreInst>(&*I)) {
-          pointer = si->getPointerOperand();
-          inst = &*I;
-        }
-
-        if (pointer) {
-          std::vector<int> offsets;
-	  if (isa<GetElementPtrInst>(pointer)) {
-	    while (GetElementPtrInst* elemPtr = dyn_cast<GetElementPtrInst>(pointer)) {
-	      if(elemPtr->getNumOperands() < 3) break;
-	      ConstantInt* CI = dyn_cast<ConstantInt>(elemPtr->getOperand(2));
-              offsets.push_back(CI->getSExtValue());
-	      pointer = elemPtr->getPointerOperand();
-              if(LoadInst* li = dyn_cast<LoadInst>(pointer)) {
-                pointer = li->getPointerOperand();
-              }
-	    }
-	  }
-
-          DSNodeHandle &nodeHandle = graph->getNodeForValue(pointer);
-          DSNode *targetNode = nodeHandle.getNode();
-          for(std::vector<DSNode*>::iterator it=argumentNodes.begin(); it != argumentNodes.end(); it++) {
-            if(*it == targetNode) {
-              int paramNumber = it - argumentNodes.begin();
-              std::reverse(offsets.begin(), offsets.end());
-              if(projections.find(paramNumber) == projections.end()) {
-                if(isa<LoadInst>(inst))
-                  projections[paramNumber] = offsets.empty() ? offSets() : offSets(offsets, true);
-                else
-                  projections[paramNumber] = offsets.empty() ? offSets() : offSets(offsets, false);
-              } else if(!offsets.empty()) {
-                if(isa<LoadInst>(inst))
-                  projections[paramNumber].read.insert(offsets);
-	        else
-                  projections[paramNumber].write.insert(offsets);
-              }
-            }
-	  }
-      }   
-
-    }	
               for(auto it = projections.begin(); it != projections.end(); it++) {
                 errs() << "Parameter: " << (*it).first << "\n";
                 (*it).second.print(errs());
                 errs() << "\n";
               }
+    }
   }
+ return false;  
 }
-
-  return false;
-}
-
 // Pass ID variable
 char DekerIDLGenerator::ID = 0;
 }

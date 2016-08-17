@@ -44,6 +44,7 @@ class DSNode : public ilist_node<DSNode> {
 public:
   typedef std::map<unsigned, SuperSet<Type*>::setPtr> TyMapTy;
   typedef std::map<unsigned, DSNodeHandle> LinkMapTy;
+  typedef std::set<unsigned> OffsetTy;
 
 private:
   friend struct ilist_sentinel_traits<DSNode>;
@@ -84,6 +85,9 @@ private:
   /// Globals - The list of global values that are merged into this node.
   ///
   svset<const GlobalValue*> Globals;
+
+  OffsetTy writeOffset;
+  OffsetTy readOffset;
 
   void operator=(const DSNode &); // DO NOT IMPLEMENT
   DSNode(const DSNode &);         // DO NOT IMPLEMENT
@@ -164,6 +168,17 @@ public:
   const_edge_iterator edge_begin() const { return Links.begin(); }
   const_edge_iterator edge_end() const { return Links.end(); }
 
+  typedef OffsetTy::iterator offset_iterator;
+  typedef OffsetTy::const_iterator const_offset_iterator;
+  offset_iterator write_offset_begin() {return writeOffset.begin();}
+  offset_iterator write_offset_end() {return writeOffset.end();}
+  const_offset_iterator write_offset_begin() const {return writeOffset.begin();}
+  const_offset_iterator write_offset_end() const {return writeOffset.end();}
+
+  offset_iterator read_offset_begin() {return readOffset.begin();}
+  offset_iterator read_offset_end() {return readOffset.end();}
+  const_offset_iterator read_offset_begin() const {return readOffset.begin();}
+  const_offset_iterator read_offset_end() const {return readOffset.end();}
   //===--------------------------------------------------
   // Accessors
 
@@ -362,6 +377,22 @@ public:
     NodeType |= RHS;
   }
 
+  void mergeWriteOffsets(DSNode* sourceNode) {
+    writeOffset.insert(sourceNode->write_offset_begin(), sourceNode->write_offset_end());
+  }
+  
+  void mergeReadOffsets(DSNode* sourceNode) {
+    readOffset.insert(sourceNode->read_offset_begin(), sourceNode->read_offset_end());
+  }
+  
+  void setWriteOffsets(OffsetTy offsets) {
+    writeOffset = offsets;
+  }
+  
+  void setReadOffsets(OffsetTy offsets) {
+    readOffset = offsets;
+  }
+
   /// getNodeFlags - Return all of the flags set on the node.  If the DEAD flag
   /// is set, hide it from the caller.
   ///
@@ -403,6 +434,12 @@ public:
   DSNode* setIntToPtrMarker()   { NodeType |= IntToPtrNode;   return this; }
   DSNode* setPtrToIntMarker()   { NodeType |= PtrToIntNode;   return this; }
   DSNode* setVAStartMarker()    { NodeType |= VAStartNode;    return this; }
+  
+  DSNode* setWriteOffset(unsigned offset) {writeOffset.insert(offset); return this;}
+  DSNode* setReadOffset(unsigned offset) {readOffset.insert(offset); return this;}
+  int getWriteSize() {return writeOffset.size();}
+  int getReadSize() {return readOffset.size();}
+
 
   void makeNodeDead() {
     Globals.clear();

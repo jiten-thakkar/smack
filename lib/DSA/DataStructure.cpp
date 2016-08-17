@@ -615,6 +615,8 @@ void DSNode::MergeNodes(DSNodeHandle& CurNodeH, DSNodeHandle& NH) {
 
   // Merge the NodeType information.
   CurNodeH.getNode()->NodeType |= N->NodeType;
+  CurNodeH.getNode()->mergeWriteOffsets(N);
+  CurNodeH.getNode()->mergeReadOffsets(N);
 
   // Start forwarding to the new node!
   N->forwardNode(CurNodeH.getNode(), NOffset);

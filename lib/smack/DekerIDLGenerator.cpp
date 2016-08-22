@@ -84,16 +84,12 @@ bool DekerIDLGenerator::runOnModule(Module& m) {
 	} else {
           DSNodeHandle &nodeHandle = graph->getNodeForValue(val);
           DSNode *node = nodeHandle.getNode();
-          errs() << "write offset size: " << node->getWriteSize() << "\n";
-          errs() << "read offset size: " << node->getReadSize() << "\n";
           argumentNodes.push_back(node);
-          //int parameterNumber = A-F.arg_begin();
           std::vector<unsigned int> writeOffsets;
           for(DSNode::const_offset_iterator it=node->write_offset_begin(); it!=node->write_offset_end(); it++) {
             if(projections.find(paramNumber) == projections.end()) {
               projections[paramNumber] = offSets();
             } 
-            errs() << "write offset: " << *it << "\n";
             writeOffsets.push_back(*it);
           }
           projections[paramNumber].write.insert(writeOffsets);
@@ -104,9 +100,13 @@ bool DekerIDLGenerator::runOnModule(Module& m) {
               projections[paramNumber] = offSets();
             }
             readOffsets.push_back(*it);
-            //projections[paramNumber].read.insert(std::vector<unsigned int>(node->read_offset_begin(), node->read_offset_end()));
           }
           projections[paramNumber].read.insert(readOffsets);
+          for(DSNode::const_edge_iterator ei=node->edge_begin(); ei!=node->edge_end(); ei++) {
+            //if((*ei).second) {
+              errs() << "offset: " << (*ei).first << "\n";
+            //}
+          }
 	}
       }
               for(auto it = projections.begin(); it != projections.end(); it++) {

@@ -377,11 +377,11 @@ public:
     NodeType |= RHS;
   }
 
-  void mergeWriteOffsets(DSNode* sourceNode) {
+  void mergeWriteOffsets(const DSNode* sourceNode) {
     writeOffset.insert(sourceNode->write_offset_begin(), sourceNode->write_offset_end());
   }
   
-  void mergeReadOffsets(DSNode* sourceNode) {
+  void mergeReadOffsets(const DSNode* sourceNode) {
     readOffset.insert(sourceNode->read_offset_begin(), sourceNode->read_offset_end());
   }
   
@@ -439,7 +439,8 @@ public:
   DSNode* setReadOffset(unsigned offset) {readOffset.insert(offset); return this;}
   int getWriteSize() {return writeOffset.size();}
   int getReadSize() {return readOffset.size();}
-
+  OffsetTy getWriteOffset() const {return writeOffset;}
+  OffsetTy getReadOffset() const {return readOffset;}
 
   void makeNodeDead() {
     Globals.clear();

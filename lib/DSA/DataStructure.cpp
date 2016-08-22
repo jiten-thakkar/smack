@@ -144,6 +144,8 @@ DSNode::DSNode(const DSNode &N, DSGraph *G, bool NullLinks)
     if (!NullLinks) Links = N.Links;
     G->addNode(this);
     ++NumNodeAllocated;
+    setWriteOffsets(N.getWriteOffset());
+    setReadOffsets(N.getReadOffset());
   }
 
 DSNode::~DSNode() {
@@ -934,7 +936,8 @@ void ReachabilityCloner::merge(const DSNodeHandle &NH,
 
     // Merge the NodeType information.
     DN->mergeNodeFlags(SN->getNodeFlags() & BitsToKeep);
-
+    DN->mergeWriteOffsets(SN);
+    DN->mergeReadOffsets(SN);
     // Before we start merging outgoing links and updating the scalar map, make
     // sure it is known that this is the representative node for the src node.
     SCNH = DSNodeHandle(DN, NH.getOffset()-SrcNH.getOffset());

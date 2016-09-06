@@ -89,7 +89,7 @@ bool DekerIDLGenerator::runOnModule(Module& m) {
   //TD = &getAnalysis<TDDataStructures>();
   for (auto& F : m) {
   //errs() << "function name:" << F.getName() << "\n";
-    if (!smack::Naming::isSmackName(F.getName())) {
+    if (!smack::Naming::isSmackName(F.getName()) && F.getName().find("llvm") == std::string::npos) {
       errs() << "Function " << F.getName() << "\n";
       std::unordered_map<int, offSets> projections;
       DSGraph *graph = BU->getDSGraph(F);

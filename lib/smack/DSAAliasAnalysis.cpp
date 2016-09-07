@@ -26,9 +26,9 @@ char DSAAliasAnalysis::ID = 0;
 void DSAAliasAnalysis::printDSAGraphs(const char* Filename) {
   std::error_code EC;
   llvm::raw_fd_ostream F(Filename, EC, sys::fs::OpenFlags::F_None);
-  TD->print(F, module);
+  //TD->print(F, module);
   BU->print(F, module);
-  TS->print(F, module);
+  //TS->print(F, module);
 }
 
 std::vector<const llvm::DSNode*> DSAAliasAnalysis::collectMemcpys(

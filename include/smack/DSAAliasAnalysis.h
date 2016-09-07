@@ -100,6 +100,7 @@ public:
     staticInits = collectStaticInits(M);
     dataLayout = M.getDataLayout();
     module = &M;
+    printDSAGraphs("bu");
     return false;
   }
 

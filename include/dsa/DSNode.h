@@ -437,8 +437,8 @@ public:
   
   DSNode* setWriteOffset(unsigned offset) {writeOffset.insert(offset); return this;}
   DSNode* setReadOffset(unsigned offset) {readOffset.insert(offset); return this;}
-  int getWriteSize() {return writeOffset.size();}
-  int getReadSize() {return readOffset.size();}
+  int getWriteSize() const {return writeOffset.size();}
+  int getReadSize() const {return readOffset.size();}
   OffsetTy getWriteOffset() const {return writeOffset;}
   OffsetTy getReadOffset() const {return readOffset;}
 

@@ -99,6 +99,18 @@ static std::string getCaption(const DSNode *N, const DSGraph *G) {
 #ifndef NDEBUG
     if (NodeType & DSNode::DeadNode       ) OS << "<dead>";
 #endif
+    if(N->getWriteSize() != 0) {
+      OS << " write: ";
+      for(DSNode::const_offset_iterator it = N->write_offset_begin(); it!=N->write_offset_end(); it++) {
+        OS << *it << " ";
+      }
+    }
+    if(N->getReadSize() != 0) {
+      OS << " read: ";
+      for(DSNode::const_offset_iterator it = N->read_offset_begin(); it!=N->read_offset_end(); it++) {
+        OS << *it << " ";
+      }
+    }
     OS << "\n";
   }
 

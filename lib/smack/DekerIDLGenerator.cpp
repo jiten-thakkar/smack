@@ -144,8 +144,8 @@ bool DekerIDLGenerator::runOnModule(Module& m) {
           std::vector<DSNode*> visitedNodes;
           visitedNodes.push_back(node);
           //errs() << "num of links: " << node->getNumLinks()  << "\n";
-          llvm::PointerType* valPointer = dyn_cast<PointerType>(val->getType());
-          if(valPointer->isStructType())
+          //llvm::PointerType* valPointer = dyn_cast<PointerType>(val->getType());
+          //`if(valPointer->isStructType())
           for(DSNode::const_edge_iterator ei=node->edge_begin(); ei!=node->edge_end(); ei++) {
             if(std::find(visitedNodes.begin(), visitedNodes.end(), (*ei).second.getNode()) != visitedNodes.end()) continue;
             //if((*ei).second) {

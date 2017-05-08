@@ -13,8 +13,9 @@ import tempfile
 from threading import Timer
 from svcomp.utils import svcomp_frontend
 from svcomp.utils import verify_bpl_svcomp
+from replay import replay_error_trace
 
-VERSION = '1.7.1'
+VERSION = '1.7.2'
 temporary_files = []
 
 def frontends():
@@ -34,7 +35,7 @@ def frontends():
 def results(args):
   """A dictionary of the result output messages."""
   return {
-    'verified': 'SMACK found no errors with unroll bound %s.' % args.unroll,
+    'verified': 'SMACK found no errors.' if args.modular else 'SMACK found no errors with unroll bound %s.' % args.unroll,
     'error': 'SMACK found an error.',
     'invalid-deref': 'SMACK found an error: invalid pointer dereference.',
     'invalid-free': 'SMACK found an error: invalid memory deallocation.',
@@ -46,11 +47,16 @@ def results(args):
 
 def inlined_procedures():
   return [
+    '$galloc',
     '$alloc',
+    '$malloc',
     '$free',
     '$memset',
     '$memcpy',
-    '__VERIFIER_'
+    '__VERIFIER_',
+    '$initialize',
+    '__SMACK_static_init',
+    '__SMACK_init_func_memory_model'
   ]
 
 def validate_input_file(file):
@@ -95,6 +101,7 @@ def arguments():
   parser.add_argument('-w', '--error-file', metavar='FILE', default=None,
     type=str, help='save error trace/witness to FILE')
 
+
   frontend_group = parser.add_argument_group('front-end options')
 
   frontend_group.add_argument('-x', '--language', metavar='LANG',
@@ -109,6 +116,7 @@ def arguments():
 
   frontend_group.add_argument('--clang-options', metavar='OPTIONS', default='',
     help='additional compiler arguments (e.g., --clang-options="-w -g")')
+
 
   translate_group = parser.add_argument_group('translation options')
 
@@ -142,8 +150,21 @@ def arguments():
   translate_group.add_argument('--memory-safety', action='store_true', default=False,
     help='enable memory safety checks')
 
+  translate_group.add_argument('--only-check-valid-deref', action='store_true', default=False,
+    help='only enable valid dereference checks')
+
+  translate_group.add_argument('--only-check-valid-free', action='store_true', default=False,
+    help='only enable valid free checks')
+
+  translate_group.add_argument('--only-check-memleak', action='store_true', default=False,
+    help='only enable memory leak checks')
+
   translate_group.add_argument('--signed-integer-overflow', action='store_true', default=False,
     help='enable signed integer overflow checks')
+
+  translate_group.add_argument('--float', action="store_true", default=False,
+    help='enable bit-precise floating-point functions')
+
 
   verifier_group = parser.add_argument_group('verifier options')
 
@@ -175,9 +196,12 @@ def arguments():
 
   verifier_group.add_argument('--svcomp-property', metavar='FILE', default=None,
     type=str, help='load SVCOMP property to check from FILE')
-	
-  translate_group.add_argument('--float', action="store_true", default=False,
-    help='enable bit-precise floating-point functions')
+
+  verifier_group.add_argument('--modular', action="store_true", default=False,
+    help='enable contracts-based modular deductive verification (uses Boogie)')
+
+  verifier_group.add_argument('--replay', action="store_true", default=False,
+    help='enable reply of error trace with test harness.')
 
   args = parser.parse_args()
 
@@ -186,6 +210,9 @@ def arguments():
 
   if not args.bpl_file:
     args.bpl_file = 'a.bpl' if args.no_verify else temporary_file('a', '.bpl', args)
+
+  if args.only_check_valid_deref or args.only_check_valid_free or args.only_check_memleak:
+    args.memory_safety = True
 
   # TODO are we (still) using this?
   # with open(args.input_file, 'r') as f:
@@ -398,15 +425,17 @@ def llvm_to_bpl(args):
   if args.memory_safety: cmd += ['-memory-safety']
   if args.signed_integer_overflow: cmd += ['-signed-integer-overflow']
   if args.float: cmd += ['-float']
+  if args.modular: cmd += ['-modular']
   try_command(cmd, console=True)
   annotate_bpl(args)
+  property_selection(args)
 
 def procedure_annotation(name, args):
   if name in args.entry_points:
     return "{:entrypoint}"
-  elif re.match("|".join(inlined_procedures()).replace("$","\$"), name):
+  elif args.modular and re.match("|".join(inlined_procedures()).replace("$","\$"), name):
     return "{:inline 1}"
-  elif args.verifier == 'boogie' or args.float:
+  elif (not args.modular) and (args.verifier == 'boogie' or args.float):
     return ("{:inline %s}" % args.unroll)
   else:
     return ""
@@ -423,6 +452,35 @@ def annotate_bpl(args):
     f.seek(0)
     f.truncate()
     f.write(bpl)
+
+def property_selection(args):
+  selected_props = []
+  if args.only_check_valid_deref:
+    selected_props.append('valid_deref')
+  elif args.only_check_valid_free:
+    selected_props.append('valid_free')
+  elif args.only_check_memleak:
+    selected_props.append('valid_memtrack')
+
+  def replace_assertion(m):
+    if len(selected_props) > 0:
+      if m.group(2) and m.group(3) in selected_props:
+        attrib = m.group(2)
+        expr = m.group(4)
+      else:
+        attrib = ''
+        expr = 'true'
+      return m.group(1) + attrib + expr + ";"
+    else:
+      return m.group(0)
+
+  with open(args.bpl_file, 'r+') as f:
+    lines = f.readlines()
+    f.seek(0)
+    f.truncate()
+    for line in lines:
+      line = re.sub(r'^(\s*assert\s*)({:(.+)})?(.+);', replace_assertion, line)
+      f.write(line)
 
 def verification_result(verifier_output):
   if re.search(r'[1-9]\d* time out|Z3 ran out of resources|timed out', verifier_output):
@@ -454,13 +512,14 @@ def verify_bpl(args):
     verify_bpl_svcomp(args)
     return
 
-  elif args.verifier == 'boogie':
+  elif args.verifier == 'boogie' or args.modular:
     command = ["boogie"]
     command += [args.bpl_file]
     command += ["/nologo", "/noinfer", "/doModSetAnalysis"]
     command += ["/timeLimit:%s" % args.time_limit]
     command += ["/errorLimit:%s" % args.max_violations]
-    command += ["/loopUnroll:%d" % args.unroll]
+    if not args.modular:
+      command += ["/loopUnroll:%d" % args.unroll]
 
   elif args.verifier == 'corral':
     command = ["corral"]
@@ -508,6 +567,9 @@ def verify_bpl(args):
 
       if not args.quiet:
         print error
+
+      if args.replay:
+         replay_error_trace(verifier_output)
 
     sys.exit(results(args)[result])
 

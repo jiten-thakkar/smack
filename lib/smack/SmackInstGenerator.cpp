@@ -551,11 +551,9 @@ void SmackInstGenerator::visitCallInst(llvm::CallInst& ci) {
       blockMap[H]->getStatements().push_front(
         Stmt::assert_(E, {Attr::attr(Naming::LOOP_INVARIANT_ANNOTATION)}));
     }
-
-  // } else if (name == "result") {
-  //   assert(ci.getNumArgOperands() == 0 && "Unexpected operands to result.");
-  //   emit(Stmt::assign(rep.expr(&ci),Expr::id(Naming::RET_VAR)));
-  //
+    //} else if (name == "result") {
+     //assert(ci.getNumArgOperands() == 0 && "Unexpected operands to result.");
+     //emit(Stmt::assign(rep.expr(&ci),Expr::id(Naming::RET_VAR)));
   // } else if (name == "qvar") {
   //   assert(ci.getNumArgOperands() == 1 && "Unexpected operands to qvar.");
   //   emit(Stmt::assign(rep.expr(&ci),Expr::id(rep.getString(ci.getArgOperand(0)))));
@@ -588,7 +586,34 @@ void SmackInstGenerator::visitCallInst(llvm::CallInst& ci) {
   //   Slice* S = getSlice(ci.getArgOperand(0));
   //   emit(Stmt::assert_(S->getBoogieExpression(naming,rep)));
 
-  } else {
+  } else if (name == "malloc") {
+    /*using namespace llvm;
+
+    assert(f && "Call encountered unresolved function.");
+
+    std::string name = naming.get(*f);
+    std::list<const Expr*> args;
+    std::list<std::string> rets;
+
+    unsigned num_arg_operands = ci.getNumOperands();
+    if (isa<CallInst>(ci))
+      num_arg_operands -= 1;
+    else if (isa<InvokeInst>(ci))
+      num_arg_operands -= 3;
+
+    for (unsigned i = 0; i < num_arg_operands; i++)
+      args.push_back(rep.expr(ci.getOperand(i)));
+
+    if (!ci.getType()->isVoidTy())
+      rets.push_back(naming.get(ci));
+
+     emit(Stmt::call(name, args, rets));*/
+    emit(rep.malloc(ci));
+  } else if (name == Naming::MEMORY_SAFETY_FUNCTION) {
+    emit(rep.memSafety(ci));
+  } else if (name == "free") {
+    emit(rep.free(ci));
+  } else { 
     emit(rep.call(f, ci));
   }
 
@@ -597,6 +622,7 @@ void SmackInstGenerator::visitCallInst(llvm::CallInst& ci) {
     if (!EXTERNAL_PROC_IGNORE.match(name))
       emit(Stmt::assume(Expr::fn(Naming::EXTERNAL_ADDR,rep.expr(&ci))));
   }
+
 }
 
 bool isSourceLoc(const Stmt* stmt) {

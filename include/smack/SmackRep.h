@@ -124,6 +124,9 @@ public:
   const Stmt* memcpy(const llvm::MemCpyInst& msi);
   const Stmt* memset(const llvm::MemSetInst& msi);
   const Expr* load(const llvm::Value* P);
+  const Stmt* malloc(const llvm::CallInst& i);
+  const Stmt* memSafety(const llvm::CallInst& i);
+  const Stmt* free(const llvm::CallInst& i);
   const Stmt* store(const Value* P, const Value* V);
   const Stmt* store(const Value* P, const Expr* V);
 
@@ -139,6 +142,9 @@ public:
   std::string memReg(unsigned i);
   std::string memType(unsigned region);
   std::string memPath(unsigned region);
+  std::string allocReg(unsigned i);
+  std::string allocType(unsigned region);
+  std::string allocPath(unsigned region);
 
   std::list< std::pair< std::string, std::string > > memoryMaps() {
     std::list< std::pair< std::string, std::string > > mms;

@@ -2022,12 +2022,11 @@ void __SMACK_decls() {
   D("var $exnv: int;");
   D("function $extractvalue(p: int, i: int) returns (int);\n");
 
+#if MEMORY_SAFETY
   D("procedure $alloc(region: int, n: ref) returns (p: ref)\n"
     "{\n"
     "  call p := $$alloc(region, n);\n"
     "}\n");
-
-#if MEMORY_SAFETY
   D("function $base(ref) returns (ref);");
   D("var $allocatedCounter: int;\n");
 
@@ -2043,11 +2042,11 @@ void __SMACK_decls() {
   D("function $Size(ref) returns (ref);");
   D("var $CurrAddr:ref;\n");
 
-  D("procedure $galloc(base_addr: ref, size: ref)\n"
+  D("procedure $galloc(region: int, base_addr: ref, size: ref)\n"
     "{\n"
     "  assume $Size(base_addr) == size;\n"
     "  assume (forall addr: ref :: {$base(addr)} $sle.ref.bool(base_addr, addr) && $slt.ref.bool(addr, $add.ref(base_addr, size)) ==> $base(addr) == base_addr);\n"
-    "  $Alloc[base_addr] := true;\n"
+    "  $alloc[region][base_addr] := true;\n"
     "}\n");
 
   D("procedure {:inline 1} $$alloc(region: int, n: ref) returns (p: ref)\n"
@@ -2083,13 +2082,13 @@ void __SMACK_decls() {
   D("var $Alloc: [ref] bool;");
   D("var $Size: [ref] ref;\n");
 
-  D("procedure $galloc(base_addr: ref, size: ref);\n"
-    "modifies $Alloc, $Size;"
+  D("procedure $galloc(region: int, base_addr: ref, size: ref);\n"
+    "modifies $Size;"
     "ensures $Size[base_addr] == size;\n"
     "ensures (forall addr: ref :: {$base(addr)} $sle.ref.bool(base_addr, addr) && $slt.ref.bool(addr, $add.ref(base_addr, size)) ==> $base(addr) == base_addr);\n"
-    "ensures $Alloc[base_addr];\n"
+    "ensures $alloc[region][base_addr];\n"
     "ensures (forall q: ref :: {$Size[q]} q != base_addr ==> $Size[q] == old($Size[q]));\n"
-    "ensures (forall q: ref :: {$Alloc[q]} q != base_addr ==> $Alloc[q] == old($Alloc[q]));\n");
+    "ensures (forall q: ref :: {$alloc[region][q]} q != base_addr ==> $alloc[region][q] == old($alloc[region][q]));\n");
 
   D("procedure {:inline 1} $$alloc(region: int, n: ref) returns (p: ref);\n"
     "modifies $Size;\n"
@@ -2116,12 +2115,11 @@ void __SMACK_decls() {
   D("function $Size(ref) returns (ref);");
   D("var $CurrAddr:ref;\n");
 
-  D("procedure $galloc(base_addr: ref, size: ref);\n"
-    "modifies $Alloc;"
+  D("procedure $galloc(region: int, base_addr: ref, size: ref);\n"
     "ensures $Size(base_addr) == size;\n"
     "ensures (forall addr: ref :: {$base(addr)} $sle.ref.bool(base_addr, addr) && $slt.ref.bool(addr, $add.ref(base_addr, size)) ==> $base(addr) == base_addr);\n"
-    "ensures $Alloc[base_addr];\n"
-    "ensures (forall q: ref :: {$Alloc[q]} q != base_addr ==> $Alloc[q] == old($Alloc[q]));\n");
+    "ensures $alloc[region][base_addr];\n"
+    "ensures (forall q: ref :: {$alloc[region][q]} q != base_addr ==> $alloc[region][q] == old($alloc[region][q]));\n");
 
   D("procedure {:inline 1} $$alloc(region: int, n: ref) returns (p: ref);\n"
     "modifies $CurrAddr;\n"
@@ -2145,6 +2143,10 @@ void __SMACK_decls() {
 #endif
 
 #else
+  D("procedure $alloc(n: ref) returns (p: ref)\n"
+    "{\n"
+    "  call p := $$alloc(n);\n"
+    "}\n");
   D("procedure $malloc(n: ref) returns (p: ref)\n"
     "{\n"
     "  call p := $$alloc(n);\n"

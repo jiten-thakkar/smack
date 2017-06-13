@@ -273,7 +273,10 @@ const Stmt* SmackRep::alloca(llvm::AllocaInst& i) {
   // TODO this should not be a pointer type.
   const unsigned R = regions.idx(&i);
   //const Expr* M = Expr::id(allocPath(R));
-  return Stmt::call(Naming::ALLOC,{Expr::id(to_string(R)), size},{naming.get(i)});
+  if (SmackOptions::MemorySafety)
+    return Stmt::call(Naming::ALLOC,{Expr::id(to_string(R)), size},{naming.get(i)});
+  else
+    return Stmt::call(Naming::ALLOC,{size},{naming.get(i)});
 }
 
 const Stmt* SmackRep::memcpy(const llvm::MemCpyInst& mci) {
@@ -494,9 +497,6 @@ const Stmt* SmackRep::malloc(const llvm::CallInst& ci) {
   //const PointerType* T = dyn_cast<PointerType>(P->getType());
   //assert(T && "Expected pointer type.");
   const unsigned R = regions.idx(&ci);
-  bool bytewise = regions.get(R).bytewiseAccess();
-  //bool singleton = regions.get(R).isSingleton();
-  const Expr* M = Expr::id(allocPath(R));
   std::string N = "malloc";
   std::list<const Expr*> args;
   std::list<std::string> rets;
@@ -506,8 +506,8 @@ const Stmt* SmackRep::malloc(const llvm::CallInst& ci) {
     num_arg_operands -= 1;
   else if (isa<InvokeInst>(ci))
     num_arg_operands -= 3;
-
-  args.push_back(Expr::id(to_string(R)));
+  if (SmackOptions::MemorySafety)
+    args.push_back(Expr::id(to_string(R)));
   for (unsigned i = 0; i < num_arg_operands; i++)
     args.push_back(arg(ci.getCalledFunction(), i, ci.getOperand(i)));
 
@@ -522,9 +522,6 @@ const Stmt* SmackRep::memSafety(const llvm::CallInst& ci) {
   //const PointerType* T = dyn_cast<PointerType>(P->getType());
   //assert(T && "Expected pointer type.");
   const unsigned R = regions.idx(ci.getOperand(0));
-  bool bytewise = regions.get(R).bytewiseAccess();
-  //bool singleton = regions.get(R).isSingleton();
-  const Expr* M = Expr::id(allocPath(R));
   std::string N = Naming::MEMORY_SAFETY_FUNCTION;
   std::list<const Expr*> args;
   std::list<std::string> rets;
@@ -535,7 +532,8 @@ const Stmt* SmackRep::memSafety(const llvm::CallInst& ci) {
   else if (isa<InvokeInst>(ci))
     num_arg_operands -= 3;
 
-  args.push_back(Expr::id(to_string(R)));
+  if (SmackOptions::MemorySafety)
+    args.push_back(Expr::id(to_string(R)));
   for (unsigned i = 0; i < num_arg_operands; i++)
     args.push_back(arg(ci.getCalledFunction(), i, ci.getOperand(i)));
 
@@ -550,9 +548,6 @@ const Stmt* SmackRep::free(const llvm::CallInst& ci) {
   //const PointerType* T = dyn_cast<PointerType>(P->getType());
   //assert(T && "Expected pointer type.");
   const unsigned R = regions.idx(ci.getOperand(0));
-  bool bytewise = regions.get(R).bytewiseAccess();
-  //bool singleton = regions.get(R).isSingleton();
-  const Expr* M = Expr::id(allocPath(R));
   std::string N = "free_";
   std::list<const Expr*> args;
   std::list<std::string> rets;
@@ -563,7 +558,8 @@ const Stmt* SmackRep::free(const llvm::CallInst& ci) {
   else if (isa<InvokeInst>(ci))
     num_arg_operands -= 3;
 
-  args.push_back(Expr::id(to_string(R)));
+  if (SmackOptions::MemorySafety)
+    args.push_back(Expr::id(to_string(R)));
   for (unsigned i = 0; i < num_arg_operands; i++)
     args.push_back(arg(ci.getCalledFunction(), i, ci.getOperand(i)));
 
@@ -909,26 +905,44 @@ ProcDecl* SmackRep::procedure(Function* F, CallInst* CI) {
     rets.push_back({Naming::RET_VAR, type(F->getReturnType())});
 
   if (name == "malloc") {
-    params.insert(params.begin(), {"A", "int"});
+    if (SmackOptions::MemorySafety)
+      params.insert(params.begin(), {"region", "int"});
     Type* W = F->getFunctionType()->getParamType(0);
     assert(W->isIntegerTy() && "Expected integer argument.");
     unsigned width = W->getIntegerBitWidth();
-    blocks.push_back(
-      Block::block("", {
-        Stmt::call(Naming::MALLOC,
-          { Expr::id("A"), integerToPointer(Expr::id(params.back().first), width) },
-          { Naming::RET_VAR }
-        )
-      })
-    );
-
+    if (SmackOptions::MemorySafety)
+      blocks.push_back(
+        Block::block("", {
+          Stmt::call(Naming::MALLOC,
+            { Expr::id("region"), integerToPointer(Expr::id(params.back().first), width) },
+            { Naming::RET_VAR }
+          )
+        })
+      );
+    else
+      blocks.push_back(
+        Block::block("", {
+          Stmt::call(Naming::MALLOC,
+            { integerToPointer(Expr::id(params.back().first), width) },
+            { Naming::RET_VAR }
+          )
+        })
+      );
   } else if (name == "free_") {
-    params.insert(params.begin(), {"A", "int"});
-    blocks.push_back(
-      Block::block("", {
-        Stmt::call(Naming::FREE, {Expr::id("A"), Expr::id(params.back().first)})
-      })
-    );
+    if (SmackOptions::MemorySafety) {
+      params.insert(params.begin(), {"region", "int"});
+      blocks.push_back(
+        Block::block("", {
+          Stmt::call(Naming::FREE, {Expr::id("region"), Expr::id(params.back().first)})
+        })
+      );
+    } else {
+      blocks.push_back(
+        Block::block("", {
+          Stmt::call(Naming::FREE, {Expr::id(params.back().first)})
+        })
+      );
+    }
 
   } else if (name.find(Naming::CONTRACT_EXPR) != std::string::npos) {
     for (auto m : memoryMaps())
@@ -1088,7 +1102,7 @@ std::string SmackRep::getPrelude() {
     s << "// Global allocations" << "\n";
     std::list<const Stmt*> stmts;
     for (auto E : globalAllocations)
-      stmts.push_back(Stmt::call("$galloc", {expr(E.first), Expr::lit(E.second)}));
+      stmts.push_back(Stmt::call("$galloc", {Expr::id(to_string(regions.idx(E.first))), expr(E.first), Expr::lit(E.second)}));
     s << Decl::procedure("$global_allocations", {}, {}, {}, {Block::block("",stmts)}) << "\n";
     s << "\n";
   }

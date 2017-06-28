@@ -2022,20 +2022,20 @@ void __SMACK_decls() {
   D("var $exnv: int;");
   D("function $extractvalue(p: int, i: int) returns (int);\n");
 
-  D("procedure $alloc(n: ref) returns (p: ref)\n"
+  D("procedure $alloc(region: int, n: ref) returns (p: ref)\n"
     "{\n"
-    "  call p := $$alloc(n);\n"
+    "  call p := $$alloc(region, n);\n"
     "}\n");
 
 #if MEMORY_SAFETY
   D("function $base(ref) returns (ref);");
   D("var $allocatedCounter: int;\n");
 
-  D("procedure $malloc(n: ref) returns (p: ref)\n"
+  D("procedure $malloc(region: int, n: ref) returns (p: ref)\n"
     "modifies $allocatedCounter;\n"
     "{\n"
     "  $allocatedCounter := $allocatedCounter + 1;\n"
-    "  call p := $$alloc(n);\n"
+    "  call p := $$alloc(region, n);\n"
     "}\n");
 
 #if MEMORY_MODEL_NO_REUSE_IMPLS
@@ -2050,8 +2050,8 @@ void __SMACK_decls() {
     "  $Alloc[base_addr] := true;\n"
     "}\n");
 
-  D("procedure {:inline 1} $$alloc(n: ref) returns (p: ref)\n"
-    "modifies $Alloc, $CurrAddr;\n"
+  D("procedure {:inline 1} $$alloc(region: int, n: ref) returns (p: ref)\n"
+    "modifies $CurrAddr;\n"
     "{\n"
     "  p := $CurrAddr;\n"
     "  havoc $CurrAddr;\n"
@@ -2064,17 +2064,17 @@ void __SMACK_decls() {
     "    assume $Size(p) == $1.ref;\n"
     "    assume $eq.ref.bool($base(p), p);\n"
     "  }\n"
-    "  $Alloc[p] := true;\n"
+    "  $alloc[region][p] := true;\n"
     "}\n");
 
-  D("procedure $free(p: ref)\n"
-    "modifies $Alloc, $allocatedCounter;\n"
+  D("procedure $free(region: int, p: ref)\n"
+    "modifies $allocatedCounter;\n"
     "{\n"
     "  if ($ne.ref.bool(p, $0.ref)) {\n"
     "    assert {:valid_free} $eq.ref.bool($base(p), p);\n"
-    "    assert {:valid_free} $Alloc[p] == true;\n"
+    "    assert {:valid_free} $alloc[region][p] == true;\n"
     "    assert {:valid_free} $sgt.ref.bool(p, $0.ref);\n"
-    "    $Alloc[p] := false;\n"
+    "    $alloc[region][p] := false;\n"
     "    $allocatedCounter := $allocatedCounter - 1;\n"
     "  }\n"
     "}\n");
@@ -2091,24 +2091,24 @@ void __SMACK_decls() {
     "ensures (forall q: ref :: {$Size[q]} q != base_addr ==> $Size[q] == old($Size[q]));\n"
     "ensures (forall q: ref :: {$Alloc[q]} q != base_addr ==> $Alloc[q] == old($Alloc[q]));\n");
 
-  D("procedure {:inline 1} $$alloc(n: ref) returns (p: ref);\n"
-    "modifies $Alloc, $Size;\n"
+  D("procedure {:inline 1} $$alloc(region: int, n: ref) returns (p: ref);\n"
+    "modifies $Size;\n"
     "ensures $sgt.ref.bool(p, $0.ref);\n"
     "ensures $slt.ref.bool(p, $MALLOC_TOP);\n"
-    "ensures !old($Alloc[p]);\n"
-    "ensures (forall q: ref :: old($Alloc[q]) ==> ($slt.ref.bool($add.ref(p, n), q) || $sgt.ref.bool(p, $add.ref(q, $Size[q]))));\n"
-    "ensures $Alloc[p];\n"
+    "ensures !old($alloc[region][p]);\n"
+    "ensures (forall q: ref :: old($alloc[region][q]) ==> ($slt.ref.bool($add.ref(p, n), q) || $sgt.ref.bool(p, $add.ref(q, $Size[q]))));\n"
+    "ensures $alloc[region][p];\n"
     "ensures $Size[p] == n;\n"
     "ensures (forall q: ref :: {$Size[q]} q != p ==> $Size[q] == old($Size[q]));\n"
-    "ensures (forall q: ref :: {$Alloc[q]} q != p ==> $Alloc[q] == old($Alloc[q]));\n"
+    "ensures (forall q: ref :: {$alloc[region][q]} q != p ==> $alloc[region][q] == old($alloc[region][q]));\n"
     "ensures $sge.ref.bool(n, $0.ref) ==> (forall q: ref :: {$base(q)} $sle.ref.bool(p, q) && $slt.ref.bool(q, $add.ref(p, n)) ==> $base(q) == p);\n");
 
-  D("procedure $free(p: ref);\n"
-    "modifies $Alloc, $allocatedCounter;\n"
-    "requires $eq.ref.bool(p, $0.ref) || ($eq.ref.bool($base(p), p) && $Alloc[p]);\n"
+  D("procedure $free(region: int, p: ref);\n"
+    "modifies $allocatedCounter;\n"
+    "requires $eq.ref.bool(p, $0.ref) || ($eq.ref.bool($base(p), p) && $alloc[region][p]);\n"
     "requires $sgt.ref.bool(p, $0.ref);\n"
-    "ensures $ne.ref.bool(p, $0.ref) ==> !$Alloc[p];\n"
-    "ensures $ne.ref.bool(p, $0.ref) ==> (forall q: ref :: {$Alloc[q]} q != p ==> $Alloc[q] == old($Alloc[q]));\n"
+    "ensures $ne.ref.bool(p, $0.ref) ==> !$alloc[region][p];\n"
+    "ensures $ne.ref.bool(p, $0.ref) ==> (forall q: ref :: {$alloc[region][q]} q != p ==> $alloc[region][q] == old($alloc[region][q]));\n"
     "ensures $ne.ref.bool(p, $0.ref) ==> $allocatedCounter == old($allocatedCounter) - 1;\n");
 
 #else // NO_REUSE does not reuse previously-allocated addresses
@@ -2123,8 +2123,8 @@ void __SMACK_decls() {
     "ensures $Alloc[base_addr];\n"
     "ensures (forall q: ref :: {$Alloc[q]} q != base_addr ==> $Alloc[q] == old($Alloc[q]));\n");
 
-  D("procedure {:inline 1} $$alloc(n: ref) returns (p: ref);\n"
-    "modifies $Alloc, $CurrAddr;\n"
+  D("procedure {:inline 1} $$alloc(region: int, n: ref) returns (p: ref);\n"
+    "modifies $CurrAddr;\n"
     "ensures p == old($CurrAddr);\n"
     "ensures $sgt.ref.bool(n, $0.ref) ==> $sle.ref.bool($add.ref(old($CurrAddr), n), $CurrAddr);\n"
     "ensures $sgt.ref.bool(n, $0.ref) ==> $Size(p) == n;\n"
@@ -2132,15 +2132,15 @@ void __SMACK_decls() {
     "ensures !$sgt.ref.bool(n, $0.ref) ==> $sle.ref.bool($add.ref(old($CurrAddr), $1.ref), $CurrAddr);\n"
     "ensures !$sgt.ref.bool(n, $0.ref) ==> $Size(p) == $1.ref;\n"
     "ensures !$sgt.ref.bool(n, $0.ref) ==> $eq.ref.bool($base(p), p);\n"
-    "ensures $Alloc[p];\n"
-    "ensures (forall q: ref :: {$Alloc[q]} q != p ==> $Alloc[q] == old($Alloc[q]));\n");
+    "ensures $alloc[region][p];\n"
+    "ensures (forall q: ref :: {$alloc[region][q]} q != p ==> $alloc[region][q] == old($alloc[region][q]));\n");
 
-  D("procedure $free(p: ref);\n"
-    "modifies $Alloc, $allocatedCounter;\n"
-    "requires $eq.ref.bool(p, $0.ref) || ($eq.ref.bool($base(p), p) && $Alloc[p]);\n"
+  D("procedure $free(region: int, p: ref);\n"
+    "modifies $allocatedCounter;\n"
+    "requires $eq.ref.bool(p, $0.ref) || ($eq.ref.bool($base(p), p) && $alloc[region][p]);\n"
     "requires $sgt.ref.bool(p, $0.ref);\n"
-    "ensures $ne.ref.bool(p, $0.ref) ==> !$Alloc[p];\n"
-    "ensures $ne.ref.bool(p, $0.ref) ==> (forall q: ref :: {$Alloc[q]} q != p ==> $Alloc[q] == old($Alloc[q]));\n"
+    "ensures $ne.ref.bool(p, $0.ref) ==> $alloc[region][p];\n"
+    "ensures $ne.ref.bool(p, $0.ref) ==> (forall q: ref :: {$alloc[region][q]} q != p ==> $alloc[region][q] == old($alloc[region][q]));\n"
     "ensures $ne.ref.bool(p, $0.ref) ==> $allocatedCounter == old($allocatedCounter) - 1;\n");
 #endif
 
@@ -2205,9 +2205,9 @@ void __SMACK_decls() {
 
 #if MEMORY_SAFETY
 // The size parameter represents number of bytes that are being accessed
-void __SMACK_check_memory_safety(void* pointer, unsigned long size) {
+void __SMACK_check_memory_safety(int region, void* pointer, unsigned long size) {
   void* sizeRef = (void*)size;
-  __SMACK_code("assert {:valid_deref} $Alloc[$base(@)] == true;", pointer);
+  __SMACK_code("assert {:valid_deref} $alloc[@][$base(@)] == true;", region, pointer);
   __SMACK_code("assert {:valid_deref} $sle.ref.bool($base(@), @);", pointer, pointer);
 #if MEMORY_MODEL_NO_REUSE_IMPLS
   __SMACK_code("assert {:valid_deref} $sle.ref.bool($add.ref(@, @), $add.ref($base(@), $Size($base(@))));", pointer, sizeRef, pointer, pointer);

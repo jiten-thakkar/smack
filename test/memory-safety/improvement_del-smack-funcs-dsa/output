@@ -1,0 +1,241 @@
+SMACK program verifier version 1.7.2
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+/usr/local/share/smack/lib/smack.c(2210,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../adjacent_fail.c(7,12): Trace: Thread=1  
+    ../adjacent_fail.c(7,12): Trace: Thread=1  (CALL malloc)
+    ../adjacent_fail.c(7,12): Trace: Thread=1  (RETURN from malloc )
+    ../adjacent_fail.c(7,12): Trace: Thread=1  
+    ../adjacent_fail.c(8,12): Trace: Thread=1  
+    ../adjacent_fail.c(8,12): Trace: Thread=1  (CALL malloc)
+    ../adjacent_fail.c(8,12): Trace: Thread=1  (RETURN from malloc )
+    ../adjacent_fail.c(8,12): Trace: Thread=1  
+    ../adjacent_fail.c(9,11): Trace: Thread=1  
+    ../adjacent_fail.c(9,11): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  (ASSERTION FAILS assert {:valid_deref} $Alloc[$base(pointer)] <==> true;
+    ../adjacent_fail.c(9,11): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../adjacent_fail.c(9,11): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+/usr/local/share/smack/lib/smack.c(2210,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../adjacent_global_fail.c(9,11): Trace: Thread=1  
+    ../adjacent_global_fail.c(9,11): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  (ASSERTION FAILS assert {:valid_deref} $Alloc[$base(pointer)] <==> true;
+    ../adjacent_global_fail.c(9,11): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../adjacent_global_fail.c(9,11): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+/usr/local/share/smack/lib/smack.c(2210,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../array1_fail.c(7,12): Trace: Thread=1  
+    ../array1_fail.c(7,12): Trace: Thread=1  (CALL malloc)
+    ../array1_fail.c(7,12): Trace: Thread=1  (RETURN from malloc )
+    ../array1_fail.c(7,12): Trace: Thread=1  
+    ../array1_fail.c(8,11): Trace: Thread=1  
+    ../array1_fail.c(8,11): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  (ASSERTION FAILS assert {:valid_deref} $Alloc[$base(pointer)] <==> true;
+    ../array1_fail.c(8,11): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../array1_fail.c(8,11): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+/usr/local/share/smack/lib/smack.c(2210,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../array2_free_fail.c(11,12): Trace: Thread=1  
+    ../array2_free_fail.c(11,12): Trace: Thread=1  (CALL malloc)
+    ../array2_free_fail.c(11,12): Trace: Thread=1  (RETURN from malloc )
+    ../array2_free_fail.c(11,12): Trace: Thread=1  
+    ../array2_free_fail.c(13,3): Trace: Thread=1  
+    ../array2_free_fail.c(13,3): Trace: Thread=1  (CALL freeMemory)
+    ../array2_free_fail.c(7,8): Trace: Thread=1  
+    ../array2_free_fail.c(7,3): Trace: Thread=1  
+    ../array2_free_fail.c(7,3): Trace: Thread=1  (CALL free_)
+    ../array2_free_fail.c(7,3): Trace: Thread=1  (RETURN from free_ )
+    ../array2_free_fail.c(8,1): Trace: Thread=1  
+    ../array2_free_fail.c(13,3): Trace: Thread=1  (RETURN from freeMemory )
+    ../array2_free_fail.c(14,7): Trace: Thread=1  
+    ../array2_free_fail.c(14,7): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  (ASSERTION FAILS assert {:valid_deref} $Alloc[$base(pointer)] <==> true;
+    ../array2_free_fail.c(14,7): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../array2_free_fail.c(14,7): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+(1,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../global_alloc_fail_free.c(10,11): Trace: Thread=1  
+    ../global_alloc_fail_free.c(10,11): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2211,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2213,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2219,1): Trace: Thread=1  
+    ../global_alloc_fail_free.c(10,11): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../global_alloc_fail_free.c(10,11): Trace: Thread=1  
+    ../global_alloc_fail_free.c(10,11): Trace: Thread=1  (c = 0)
+    ../global_alloc_fail_free.c(11,8): Trace: Thread=1  
+    ../global_alloc_fail_free.c(11,3): Trace: Thread=1  
+    ../global_alloc_fail_free.c(11,3): Trace: Thread=1  (CALL free_)
+    ../global_alloc_fail_free.c(11,3): Trace: Thread=1  (RETURN from free_ )
+    ../global_alloc_fail_free.c(11,3): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+(1,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(10,12): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(10,12): Trace: Thread=1  (CALL malloc)
+    ../global_and_heap_alloc_fail_free.c(10,12): Trace: Thread=1  (RETURN from malloc )
+    ../global_and_heap_alloc_fail_free.c(10,12): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(11,11): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(11,11): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2211,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2213,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2219,1): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(11,11): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../global_and_heap_alloc_fail_free.c(11,11): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(11,11): Trace: Thread=1  (c = 0)
+    ../global_and_heap_alloc_fail_free.c(12,8): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(12,3): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(12,3): Trace: Thread=1  (CALL free_)
+    ../global_and_heap_alloc_fail_free.c(12,3): Trace: Thread=1  (RETURN from free_ )
+    ../global_and_heap_alloc_fail_free.c(13,8): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(13,3): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_free.c(13,3): Trace: Thread=1  (CALL free_)
+    ../global_and_heap_alloc_fail_free.c(13,3): Trace: Thread=1  (RETURN from free_ )
+    ../global_and_heap_alloc_fail_free.c(13,3): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+/usr/local/share/smack/lib/smack.c(2222,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_no_free.c(10,12): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_no_free.c(10,12): Trace: Thread=1  (CALL malloc)
+    ../global_and_heap_alloc_fail_no_free.c(10,12): Trace: Thread=1  (RETURN from malloc )
+    ../global_and_heap_alloc_fail_no_free.c(11,11): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_no_free.c(11,11): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2211,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2213,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2219,1): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_no_free.c(11,11): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../global_and_heap_alloc_fail_no_free.c(11,11): Trace: Thread=1  
+    ../global_and_heap_alloc_fail_no_free.c(11,11): Trace: Thread=1  (c = 0)
+    ../global_and_heap_alloc_fail_no_free.c(11,11): Trace: Thread=1  (CALL __SMACK_check_memory_leak)
+    /usr/local/share/smack/lib/smack.c(2222,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2222,3): Trace: Thread=1  (ASSERTION FAILS assert {:valid_memtrack} $allocatedCounter == 0;
+    ../global_and_heap_alloc_fail_no_free.c(11,11): Trace: Thread=1  (RETURN from __SMACK_check_memory_leak )
+    ../global_and_heap_alloc_fail_no_free.c(11,11): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+/usr/local/share/smack/lib/smack.c(2210,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../null_dereference_fail.c(8,11): Trace: Thread=1  
+    ../null_dereference_fail.c(8,11): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  (ASSERTION FAILS assert {:valid_deref} $Alloc[$base(pointer)] <==> true;
+    ../null_dereference_fail.c(8,11): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../null_dereference_fail.c(8,11): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+(1,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../simple_double_free.c(10,18): Trace: Thread=1  
+    ../simple_double_free.c(10,18): Trace: Thread=1  (CALL malloc)
+    ../simple_double_free.c(10,18): Trace: Thread=1  (RETURN from malloc )
+    ../simple_double_free.c(10,12): Trace: Thread=1  
+    ../simple_double_free.c(12,8): Trace: Thread=1  
+    ../simple_double_free.c(12,3): Trace: Thread=1  
+    ../simple_double_free.c(12,3): Trace: Thread=1  (CALL free_)
+    ../simple_double_free.c(12,3): Trace: Thread=1  (RETURN from free_ )
+    ../simple_double_free.c(13,8): Trace: Thread=1  
+    ../simple_double_free.c(13,3): Trace: Thread=1  
+    ../simple_double_free.c(13,3): Trace: Thread=1  (CALL free_)
+    ../simple_double_free.c(13,3): Trace: Thread=1  (RETURN from free_ )
+    ../simple_double_free.c(13,3): Trace: Thread=1  (Done)
+
+SMACK program verifier version 1.7.2
+../structure1.c:14:11: warning: array index 11 is past the end of the array (which contains 10 elements) [-Warray-bounds]
+  int x = s->a[11];
+          ^    ~~
+../structure1.c:7:3: note: array 'a' declared here
+  int a[10];
+  ^
+1 warning generated.
+SMACK found no errors with unroll bound 1.
+SMACK program verifier version 1.7.2
+../structure1_fail.c:14:11: warning: array index 22 is past the end of the array (which contains 10 elements) [-Warray-bounds]
+  int x = s->a[22];
+          ^    ~~
+../structure1_fail.c:7:3: note: array 'a' declared here
+  int a[10];
+  ^
+1 warning generated.
+/usr/local/share/smack/lib/smack.c(2210,1): This assertion can fail
+Execution trace:
+    /usr/local/share/smack/lib/smack.c(2228,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2231,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2233,1): Trace: Thread=1  
+    ../structure1_fail.c(13,14): Trace: Thread=1  
+    ../structure1_fail.c(13,14): Trace: Thread=1  (CALL malloc)
+    ../structure1_fail.c(13,14): Trace: Thread=1  (RETURN from malloc )
+    ../structure1_fail.c(13,14): Trace: Thread=1  
+    ../structure1_fail.c(14,14): Trace: Thread=1  
+    ../structure1_fail.c(14,14): Trace: Thread=1  (CALL __SMACK_check_memory_safety)
+    /usr/local/share/smack/lib/smack.c(2209,19): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  
+    /usr/local/share/smack/lib/smack.c(2210,3): Trace: Thread=1  (ASSERTION FAILS assert {:valid_deref} $Alloc[$base(pointer)] <==> true;
+    ../structure1_fail.c(14,14): Trace: Thread=1  (RETURN from __SMACK_check_memory_safety )
+    ../structure1_fail.c(14,14): Trace: Thread=1  (Done)
+

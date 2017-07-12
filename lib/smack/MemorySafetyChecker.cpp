@@ -11,6 +11,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/IR/ValueSymbolTable.h"
 #include "llvm/IR/IntrinsicInst.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 
 namespace smack {
 
@@ -35,7 +36,8 @@ void inserMemoryAccessCheck(Value* memoryPointer, Instruction* I, DataLayout* da
   Type *voidPtrTy = PointerType::getUnqual(IntegerType::getInt8Ty(F->getContext()));
   CastInst* castPointer = CastInst::Create(Instruction::BitCast, memoryPointer, voidPtrTy, "", &*I);
   Value* args[] = {castPointer, size};
-  CallInst::Create(memorySafetyFunction, ArrayRef<Value*>(args, 2), "", &*I);
+  InlineFunctionInfo IFI;
+  InlineFunction(CallInst::Create(memorySafetyFunction, ArrayRef<Value*>(args, 2), "", &*I), IFI);
 }
 
 bool MemorySafetyChecker::runOnModule(Module& m) {

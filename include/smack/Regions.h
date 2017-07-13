@@ -24,6 +24,10 @@ private:
   bool complicated;
   bool collapsed;
 
+  unsigned nodeId;
+
+  static unsigned nodeIdCounter;
+  static std::map<const DSNode*, unsigned>* nodeMap;
   static const DataLayout* DL;
   static DSAWrapper* DSA;
   // static DSNodeEquivs* NEQS;
@@ -51,6 +55,14 @@ public:
   const Type* getType() const { return type; }
 
   void print(raw_ostream&);
+  
+  inline unsigned getNodeId() const {
+    return nodeId;
+  }
+
+  inline void setNodeId(unsigned id) {
+    nodeId = id;
+  } 
 
 };
 
@@ -68,6 +80,7 @@ public:
   unsigned size() const;
   unsigned idx(const llvm::Value* v);
   unsigned idx(const llvm::Value* v, unsigned length);
+  unsigned nodeIdx(const llvm::Value* v);
   Region& get(unsigned R);
 
   // void visitModule(Module& M) {

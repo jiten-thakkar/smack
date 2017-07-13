@@ -11,6 +11,8 @@ namespace smack {
 
 const DataLayout* Region::DL = nullptr;
 DSAWrapper* Region::DSA = nullptr;
+unsigned Region::nodeIdCounter = 0;
+std::map<const DSNode*, unsigned>* Region::nodeMap;
 // DSNodeEquivs* Region::NEQS = nullptr;
 
 namespace {
@@ -41,6 +43,7 @@ namespace {
 void Region::init(Module& M, Pass& P) {
   DL = &M.getDataLayout();
   DSA = &P.getAnalysis<DSAWrapper>();
+  nodeMap = new std::map<const DSNode*, unsigned>();
 }
 
 namespace {
@@ -124,6 +127,12 @@ void Region::init(const Value* V, unsigned length) {
   context = &V->getContext();
   representative = (DSA && !dyn_cast<ConstantPointerNull>(V))
     ? DSA->getNode(V) : nullptr;
+  if (nodeMap->find(representative) != nodeMap->end()) {
+    nodeId = (*nodeMap)[representative];
+  } else {
+    nodeId = nodeIdCounter++;
+    (*nodeMap)[representative] = nodeId;
+  }
   this->type = T;
   this->offset = DSA ? DSA->getOffset(V) : 0;
   this->length = length;
@@ -304,6 +313,22 @@ unsigned Regions::idx(Region& R) {
   DEBUG(errs() << "[regions]   returning index: " << r << "\n\n");
 
   return r;
+}
+
+unsigned Regions::nodeIdx(const llvm::Value* V) {
+  DEBUG(
+    errs() << "[regions] for: " << *V << "\n";
+    auto U = V;
+    while (U && !isa<Instruction>(U) && !U->use_empty()) U = U->user_back();
+    if (auto I = dyn_cast<Instruction>(U)) {
+      auto F = I->getParent()->getParent();
+      if (I != V)
+        errs() << "  at instruction: " << *I << "\n";
+      errs() << "  in function: " << F->getName() << "\n";
+    }
+  );
+  Region R(V);
+  return R.getNodeId();
 }
 
 void Regions::visitLoadInst(LoadInst& I) {

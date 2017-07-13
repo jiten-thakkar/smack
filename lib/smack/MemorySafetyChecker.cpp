@@ -27,20 +27,25 @@ void insertMemoryLeakCheck(Function& F, Module& m) {
   }
 }
 
-void inserMemoryAccessCheck(Value* memoryPointer, Instruction* I, DataLayout* dataLayout, Function* memorySafetyFunction, Function* F) {
+void inserMemoryAccessCheck(Value* memoryPointer, Instruction* I, DataLayout* dataLayout, Function* memorySafetyFunction, 
+    Function* F, Regions& regions) {
   // Finding the exact type of the second argument to our memory safety function
-  Type* sizeType = memorySafetyFunction->getFunctionType()->getParamType(1);
+  Type* regionType = memorySafetyFunction->getFunctionType()->getParamType(0);
+  unsigned region = regions.nodeIdx(memoryPointer);
+  Value* regionVal = ConstantInt::get(regionType, region);
+  Type* sizeType = memorySafetyFunction->getFunctionType()->getParamType(2);
   PointerType* pointerType = cast<PointerType>(memoryPointer->getType());
   uint64_t storeSize = dataLayout->getTypeStoreSize(pointerType->getPointerElementType());
   Value* size = ConstantInt::get(sizeType, storeSize);
   Type *voidPtrTy = PointerType::getUnqual(IntegerType::getInt8Ty(F->getContext()));
   CastInst* castPointer = CastInst::Create(Instruction::BitCast, memoryPointer, voidPtrTy, "", &*I);
-  Value* args[] = {castPointer, size};
+  Value* args[] = {regionVal, castPointer, size};
   InlineFunctionInfo IFI;
-  InlineFunction(CallInst::Create(memorySafetyFunction, ArrayRef<Value*>(args, 2), "", &*I), IFI);
+  InlineFunction(CallInst::Create(memorySafetyFunction, ArrayRef<Value*>(args, 3), "", &*I), IFI);
 }
 
 bool MemorySafetyChecker::runOnModule(Module& m) {
+  Regions& regions = getAnalysis<Regions>();
   DataLayout* dataLayout = new DataLayout(&m);
   Function* memorySafetyFunction = m.getFunction(Naming::MEMORY_SAFETY_FUNCTION);
   assert(memorySafetyFunction != NULL && "Memory safety function must be present.");
@@ -51,9 +56,9 @@ bool MemorySafetyChecker::runOnModule(Module& m) {
       }
       for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
         if (LoadInst* li = dyn_cast<LoadInst>(&*I)) {
-          inserMemoryAccessCheck(li->getPointerOperand(), &*I, dataLayout, memorySafetyFunction, &F);
+          inserMemoryAccessCheck(li->getPointerOperand(), &*I, dataLayout, memorySafetyFunction, &F, regions);
         } else if (StoreInst* si = dyn_cast<StoreInst>(&*I)) {
-          inserMemoryAccessCheck(si->getPointerOperand(), &*I, dataLayout, memorySafetyFunction, &F);
+          inserMemoryAccessCheck(si->getPointerOperand(), &*I, dataLayout, memorySafetyFunction, &F, regions);
         } else if (MemSetInst* memseti = dyn_cast<MemSetInst>(&*I)) {
 	    Value* dest = memseti->getDest();
 	    Value* size = memseti->getLength();

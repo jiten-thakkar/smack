@@ -270,8 +270,8 @@ const Stmt* SmackRep::alloca(llvm::AllocaInst& i) {
       pointerLit(storageSize(i.getAllocatedType())),
       integerToPointer(expr(i.getArraySize()), getIntSize(i.getArraySize())));
 
-  // TODO this should not be a pointer type.
-  const unsigned R = regions.idx(&i);
+  const unsigned R = regions.nodeIdx(&i);
+
   //const Expr* M = Expr::id(allocPath(R));
   if (SmackOptions::MemorySafety)
     return Stmt::call(Naming::ALLOC,{Expr::id(to_string(R)), size},{naming.get(i)});
@@ -496,7 +496,7 @@ const Stmt* SmackRep::returnValueAnnotation(const CallInst& CI) {
 const Stmt* SmackRep::malloc(const llvm::CallInst& ci) {
   //const PointerType* T = dyn_cast<PointerType>(P->getType());
   //assert(T && "Expected pointer type.");
-  const unsigned R = regions.idx(&ci);
+  const unsigned R = regions.nodeIdx(&ci);
   std::string N = "malloc";
   std::list<const Expr*> args;
   std::list<std::string> rets;
@@ -521,7 +521,7 @@ const Stmt* SmackRep::malloc(const llvm::CallInst& ci) {
 const Stmt* SmackRep::memSafety(const llvm::CallInst& ci) {
   //const PointerType* T = dyn_cast<PointerType>(P->getType());
   //assert(T && "Expected pointer type.");
-  const unsigned R = regions.idx(ci.getOperand(0));
+  const unsigned R = regions.nodeIdx(ci.getOperand(0));
   std::string N = Naming::MEMORY_SAFETY_FUNCTION;
   std::list<const Expr*> args;
   std::list<std::string> rets;
@@ -547,7 +547,7 @@ const Stmt* SmackRep::memSafety(const llvm::CallInst& ci) {
 const Stmt* SmackRep::free(const llvm::CallInst& ci) {
   //const PointerType* T = dyn_cast<PointerType>(P->getType());
   //assert(T && "Expected pointer type.");
-  const unsigned R = regions.idx(ci.getOperand(0));
+  const unsigned R = regions.nodeIdx(ci.getOperand(0));
   std::string N = "free_";
   std::list<const Expr*> args;
   std::list<std::string> rets;

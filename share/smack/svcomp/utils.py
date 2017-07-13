@@ -36,7 +36,7 @@ def svcomp_frontend(args):
       args.bit_precise = True
       args.bit_precise_pointers = True
       #args.verifier = 'boogie'
-      args.time_limit = 890
+      args.time_limit = 1000
       args.unroll = 100
     args.execute = executable
   else:
@@ -278,10 +278,10 @@ def verify_bpl_svcomp(args):
   elif "printf_false-unreach-call" in bpl or "echo_true-no-overflow" in bpl:
     heurTrace += "BusyBox benchmark detected. Setting loop unroll bar to 11.\n"
     loopUnrollBar = 11
-  elif args.memory_safety and "__main(argc:" in bpl:
+  elif args.memory_safety and "__main($i0" in bpl:
     heurTrace += "BusyBox memory safety benchmark detected. Setting loop unroll bar to 4.\n"
     loopUnrollBar = 4
-  elif args.signed_integer_overflow and "__main(argc:" in bpl:
+  elif args.signed_integer_overflow and "__main($i0" in bpl:
     heurTrace += "BusyBox overflows benchmark detected. Setting loop unroll bar to 4.\n"
     loopUnrollBar = 4
   elif args.signed_integer_overflow and ("jain" in bpl or "TerminatorRec02" in bpl or "NonTerminationSimple" in bpl):
@@ -423,6 +423,7 @@ def verify_bpl_svcomp(args):
     sys.exit(smack.top.results(args)[result])
 
 def write_error_file(args, status, verifier_output):
+  return
   if args.memory_safety or status == 'timeout' or status == 'unknown':
     return
   hasBug = (status != 'verified')
